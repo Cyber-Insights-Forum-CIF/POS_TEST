@@ -56,11 +56,6 @@ class ProductController extends Controller
             'photos' => $request->photos,
         ]);
         return new ProductDetailResource($products);
-
-
-
-
-
 //        return new ProductDetailResource($products);
 //        return $request;
 

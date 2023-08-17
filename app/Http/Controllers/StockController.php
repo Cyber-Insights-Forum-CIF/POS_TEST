@@ -16,10 +16,10 @@ class StockController extends Controller
      */
     public function index()
     {
-        $stocks = Stock::latest("id")->paginate(10)->withQueryString();
+        $stocks = Stock::latest("id")->paginate(5)->withQueryString();
         if ($stocks->count()  === 0) {
             return response()->json([
-                "message" => "No  Products"
+                "message" => "No  Stock available"
             ]);
         }
         return StockResource::collection($stocks);
@@ -57,14 +57,6 @@ class StockController extends Controller
      */
     public function show(string $id)
     {
-        $stock = Stock::find($id);
-//        return $id;
-        if(is_null($stock)){
-            return response()->json([
-                'message' => 'Not Found',
-            ]);
-        }
-        return new StockDetailRescource($stock);
 
     }
 
@@ -88,11 +80,7 @@ class StockController extends Controller
                 'message' => 'Not Found',
             ], 404);
         }
-        // if (Gate::denies('delete', $brand)) {
-        //     return response()->json([
-        //         'message' => 'you are no allowed',
-        //     ]);
-        // }
+
         $stock->delete();
 
         return response()->json([

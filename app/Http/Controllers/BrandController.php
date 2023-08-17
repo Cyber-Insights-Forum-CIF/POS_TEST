@@ -95,6 +95,7 @@ class BrandController extends Controller
         $brands->update();
 
         return new BrandDetailResource($brands);
+
     }
 
     /**

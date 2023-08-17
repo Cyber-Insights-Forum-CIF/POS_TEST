@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('photos', function (Blueprint $table) {
             $table->id();
-            $table->string('url');//->default(config('info.default_main_photo'));
-            $table->string("name");//->default(config('info.default_main_photo_name.'));
-            $table->string("ext");//->default(config('info.ext'));
-            $table->foreignId("user_id");
+            $table->string('url');
+            $table->string('name');
+            $table->string('ext')->nullable();
+            $table->foreignId('user_id');
             $table->timestamps();
         });
     }

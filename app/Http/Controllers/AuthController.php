@@ -11,58 +11,167 @@ use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
-    public function register(Request $request){
+    public function showUserLists()
+    {
+
+        $users = User::all();
+        return $users;
+    }
+
+    public function register(Request $request)
+    {
         $request->validate([
-            "name" => "required|min:3",
-            "email" => "required|email|unique:users",
-            "password" => "required|min:8|confirmed"
+            "name" => "required|min:3|max:20",
+            "phone_number" => "nullable|min:8",
+            "date_of_birth" => "nullable",
+            "gender" => "required",
+            "address" => "nullable",
+            "email" => "email|required|unique:users",
+            "password" => "required|min:6|max:8",
+            "role" => "required",
+            'user_photo' => "nullable",
         ]);
+
+//        return $request;
+//        Gate::authorize("admin-only");
 
         $user = User::create([
             "name" => $request->name,
+            "phone_number" => $request->phone,
+            "date_of_birth" => $request->date_of_birth,
+            "gender" => $request->gender,
+            "address" => $request->address,
+            'role' => $request->role,
             "email" => $request->email,
-            "password" => Hash::make($request->password)
+            "password" => Hash::make($request->password),
+            "user_photo" => $request->user_photo
         ]);
+
 
         return response()->json([
-            "message" => "User register successful",
+            "message" => "user register successfully",
+            "data" => $user
         ]);
-
     }
 
-    public function login(Request $request){
+    public function edit(Request $request)
+    {
         $request->validate([
-            "email" => "required|email",
-            "password" => "required|min:8"
+            "name" => "required|min:3|max:20",
+            "phone" => "nullable|min:8",
+            "date_of_birth" => "nullable",
+            // "gender" => "required",
+            "address" => "nullable",
+            'user_photo' => "nullable",
         ]);
 
-        if(!Auth::attempt($request->only('email','password'))){
+        // Gate::authorize("admin-only");
+        $user = User::find(Auth::id());
+        if (is_null($user)) {
             return response()->json([
-                "message" => "Username or password wrong",
+                "message" => "user not found"
             ]);
         }
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+        if ($request->has('address')) {
+            $user->address = $request->address;
+        }
+        if ($request->has('date_of_birth')) {
+            $user->date_of_birth = $request->date_of_birth;
+        }
+        if ($request->has('gender')) {
+            $user->gender = $request->gender;
+        }
+        if ($request->has('user_photo')) {
+            $user->user_photo = $request->user_photo;
+        }
+
+        $user->update();
+
+        //         $user = User::find(Auth::id())->update([
+        //     "name" => $request->name,
+        //     "phone" => $request->phone,
+        //     "date_of_birth" => $request->date_of_birth,
+        //     "gender" => $request->gender,
+        //     "address" => $request->address,
+        //     "user_photo" => $request->user_photo
+        // ]);
+
+
+        return response()->json([
+            "message" => "update user successfully",
+            "data" => $user
+        ]);
+    }
+    public function login(Request $request)
+    {
+        $request->validate([
+            "email" => "email|required",
+            "password" => "required|min:6|max:10",
+        ]);
+
+        if (!Auth::attempt($request->only('email', "password"))) {
+            return response()->json([
+                "message" => "User Name or Password Wrong",
+            ]);
+        };
 
         $token = $request->user()->createToken($request->has("device") ? $request->device : 'unknown');
-        return $token;
-    }
 
-    public function logout(){
-        Auth::user()->currentAccessToken()->delete();
         return response()->json([
-            "message" => "logout successful"
+            "message" => "login successfully",
+            "device_name" => $token->accessToken->name,
+            "token" => $token->plainTextToken
         ]);
     }
 
-    public function logoutAll(){
-        foreach (Auth::user()->tokens as $token) {
-            $token->delete();
-        }
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
         return response()->json([
-            "message" => "logout all devices successful"
+            "message" => "logout successful",
         ]);
     }
 
-    public function devices(){
+    public function devices()
+    {
         return Auth::user()->tokens;
+    }
+
+    public function logoutAll(Request $request)
+    {
+        // foreach (Auth::user()->tokens as $token) {
+        //     $token->delete();
+        // }
+
+        $request->user()->tokens()->delete();
+
+        return response()->json([
+            "message" => "Logout All Successfully",
+        ]);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validateWithBag('updatePassword', [
+            'current_password' => ['required', "current_password"],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
+
+        // Gate::authorize("admin-only");
+
+        $request->user()->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return response()->json([
+            "message" => "Password Updated",
+        ]);
     }
 }

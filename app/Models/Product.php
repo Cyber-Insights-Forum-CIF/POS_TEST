@@ -32,6 +32,6 @@ class Product extends Model
     {
         return $this->belongsToMany(Voucher::class, VoucherRecord::class);
     }
-    protected $fillable = ["name","brand_id","actual_price","sale_price",'total_stock','unit','more_information','user_id','photo'];
+    protected $fillable = ["name","brand_id","actual_price","sales_price",'total_stock','unit','more_information','user_id','photo'];
 
 }

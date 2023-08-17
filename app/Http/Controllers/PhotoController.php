@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Photo;
+use App\Http\Requests\StorePhotoRequest;
+use App\Http\Requests\UpdatePhotoRequest;
 use App\Http\Resources\PhotoDetailResource;
 use App\Http\Resources\PhotoResource;
-use App\Models\Photo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class PhotoController extends Controller
 {
@@ -15,45 +18,53 @@ class PhotoController extends Controller
      */
     public function index()
     {
+        $photos = Photo::when(Auth::user()->role !== "admin", function ($query) {
+            $query->where("user_id", Auth::id());
+        })->latest("id")->get();
 
-        $photo = Photo::latest("id")->paginate(5)->withQueryString();
-        return PhotoResource::collection($photo);
+//        if (empty($photos->toArray())) {
+//            return response()->json([
+//                "message" => "there is no photo"
+//            ]);
+//        }
+        if(is_null($photos)){
+            return response()->json([
+                'message" => "Not Found Photo',
+            ]);
+        }
 
+        return PhotoResource::collection($photos);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StorePhotoRequest $request)
     {
-        $request->validate([
-            'title' => 'required|string',
-            'description' => 'required|string',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
 
-        if ($request->hasFile('photos')) {
-            $photos = $request->file('photos');
+//        return $request;
+        if ($request->hasFile('photo')) {
+            $photos = $request->file('photo');
             $savedPhotos = [];
             foreach ($photos as $photo) {
+                $name = md5(pathinfo($photo->getClientOriginalName(), PATHINFO_FILENAME));
                 $savedPhoto = $photo->store("public/photo");
                 $savedPhotos[] = [
-                    "photo" => $request->photo_id,
-                    "address" => $savedPhoto,
-                    'user_id' => Auth::id(),
+                    "url" => $savedPhoto,
+                    "name" => $name,
+                    "ext" => $photo->extension(),
+                    "user_id" => Auth::id(),
                     "created_at" => now(),
                     "updated_at" => now()
 
                 ];
             }
             Photo::insert($savedPhotos);
-            //  foreach($photos as $photo){
-            //     $savedPhoto = $photo->store("public/photo");
-            //     $savedPhotos [] = [ "address" => $savedPhoto];
-            //  }
-            //  $article->photos()->createMany($savedPhotos);
         }
-        return redirect()->back();
+
+        return response()->json([
+            "message" => "Photo Upload Success"
+        ]);
     }
 
     /**
@@ -62,14 +73,47 @@ class PhotoController extends Controller
     public function show(string $id)
     {
 
+        $photo = Photo::find($id);
+//        $this->authorize('view', $photo);
+        if (is_null($photo)){
+            return response()->json([
+                "message" => "there is no photo"
+            ]);
+        }
+
+        return new PhotoDetailResource($photo);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdatePhotoRequest $request, Photo $photo)
     {
-        //
+        // return $request;
+    }
+
+    public function deleteMultiplePhotos(Request $request)
+    {
+        $photoId = $request->photos;
+        $photos = Photo::whereIn("id", $photoId)->get();
+        if (empty($photos)) {
+            return response()->json([
+                "message" => "Not Delete"
+            ]);
+        }
+
+        foreach ($photos as $photo) {
+            if (Auth::id() != $photo->user_id) {
+                return response()->json([
+                    'message' => "Don Not Allow"
+                ]);
+            }
+        }
+        Photo::whereIn('id', $photoId)->delete();
+        Storage::delete($photos->pluck('url')->toArray());
+        return response()->json([
+            "message" => " deleted successfully"
+        ]);
     }
 
     /**
@@ -77,10 +121,17 @@ class PhotoController extends Controller
      */
     public function destroy(string $id)
     {
+
         $photo = Photo::find($id);
+        if (is_null($photo)) {
+            return response()->json([
+                "message" => "Not Photo"
+            ]);
+        }
         $photo->delete();
+        Storage::delete($photo->url);
         return response()->json([
-            'message' => 'Photo deleted successfully'
+            "message" => "Photo deleted "
         ]);
     }
 }

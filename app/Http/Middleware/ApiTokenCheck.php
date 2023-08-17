@@ -15,6 +15,19 @@ class ApiTokenCheck
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (!$request->hasHeader("token")) {
+            return response()->json([
+                "message" => "token is required",
+            ]);
+        }
+
+        if ($request->header('token') != 111) {
+            return response()->json([
+                'message' => "token is invalid",
+            ]);
+        }
+
         return $next($request);
     }
+
 }
