@@ -15,6 +15,7 @@ class AuthController extends Controller
     {
 
         $users = User::all();
+
         return $users;
     }
 
@@ -144,16 +145,14 @@ class AuthController extends Controller
         return Auth::user()->tokens;
     }
 
-    public function logoutAll(Request $request)
-    {
-        // foreach (Auth::user()->tokens as $token) {
-        //     $token->delete();
-        // }
 
+    public function logoutAll(Request $request){
+        foreach (Auth::user()->tokens as $token) {
+            $token->delete();
+        }
         $request->user()->tokens()->delete();
-
         return response()->json([
-            "message" => "Logout All Successfully",
+            "message" => "logout all devices successful"
         ]);
     }
 
