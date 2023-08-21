@@ -41,14 +41,12 @@ Route::prefix("v1")->group(function () {
 
 
         Route::controller(AuthController::class)->group(function () {
-            Route::post('register', "register");
+            Route::post('addUser', "addUser");
             Route::get('user-lists','showUserLists');
             Route::put('edit', "edit");
             Route::post("logout", 'logout');
             Route::post("logout-all", 'logoutAll');
         });
     });
-
-
     Route::post('login', [AuthController::class, 'login']);
 });

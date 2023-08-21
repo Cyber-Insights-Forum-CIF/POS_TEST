@@ -14,17 +14,25 @@ class AuthController extends Controller
     public function showUserLists()
     {
 
-        $users = User::all();
+        if (Auth::user()->role !== "admin") {
+            return response()->json([
+                "message" => "You Are Not Allowed"
+            ]);
+        }
 
-        return $users;
+        $users = User::all();
+        return response()->json([
+            "users" => $users
+        ]);
+
     }
 
-    public function register(Request $request)
+    public function addUser(Request $request)
     {
         $request->validate([
             "name" => "required|min:3|max:20",
             "phone_number" => "nullable|min:8",
-            "date_of_birth" => "nullable",
+            "date_birth" => "nullable",
             "gender" => "required",
             "address" => "nullable",
             "email" => "email|required|unique:users",
@@ -39,7 +47,7 @@ class AuthController extends Controller
         $user = User::create([
             "name" => $request->name,
             "phone_number" => $request->phone,
-            "date_of_birth" => $request->date_of_birth,
+            "date_birth" => $request->date_birth,
             "gender" => $request->gender,
             "address" => $request->address,
             'role' => $request->role,
@@ -51,7 +59,7 @@ class AuthController extends Controller
 
         return response()->json([
             "message" => "user register successfully",
-            "data" => $user
+//            "data" => $user
         ]);
     }
 
@@ -133,11 +141,16 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+//        $userId = $request->user()->id;
+//        User::find($userId);
         $request->user()->currentAccessToken()->delete();
+//        Auth::logout();
+
 
         return response()->json([
             "message" => "logout successful",
         ]);
+
     }
 
     public function devices()
@@ -147,9 +160,9 @@ class AuthController extends Controller
 
 
     public function logoutAll(Request $request){
-        foreach (Auth::user()->tokens as $token) {
-            $token->delete();
-        }
+//        foreach (Auth::user()->tokens as $token) {
+//            $token->delete();
+//        }
         $request->user()->tokens()->delete();
         return response()->json([
             "message" => "logout all devices successful"
